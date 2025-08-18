@@ -1,6 +1,6 @@
 # Playmaker.Audio
 
-A modern, end-to-end game audio engine on top of OpenAL Soft. This project aims to give .NET / C# games a developer-first audio layer that feels closer to high-level middleware while staying completely open, hackable, and dependency-light.
+A modern, end-to-end 3d game audio engine on top of OpenAL Soft. This project aims to give .NET / C# games a developer-first audio layer that feels closer to high-level middleware while staying completely open, hackable, and dependency-light.
 
 Currently under early, fast-moving development. Expect breaking API changes, refactors, renames, and sudden new subsystems. I have yet to add eEFX which will be a huge change! If you use this, make sure to pin a commit for now.
 
