@@ -70,6 +70,12 @@ public sealed class StreamingSoundGenerator : StreamingAudioGeneratorBase
                     }
                     else
                     {
+                        if (Looping && CanSeek)
+                        {
+                            _freeBuffers.Push(freeAlBuffer);
+                            _decoder.TrySeek(TimeSpan.Zero);
+                            continue;
+                        }
                         _freeBuffers.Push(freeAlBuffer);
                         MarkEndOfStream();
                         break;

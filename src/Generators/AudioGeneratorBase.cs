@@ -144,6 +144,7 @@ public abstract class StreamingAudioGeneratorBase : AudioGeneratorBase
     protected readonly ConcurrentStack<int> _freeBuffers;
     protected readonly ConcurrentStack<int> _filledBuffers;
     private volatile bool _endOfStream;
+    public bool Looping { get; set; }
 
     public override bool IsExclusive => true;
     public int StreamBufferCount { get; }

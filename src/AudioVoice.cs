@@ -217,14 +217,6 @@ public sealed class AudioVoice : IDisposable
                     {
                         StopImmediate();
                     }
-                    else
-                    {
-                        _logicalPlaybackTime = 0f;
-                        if (streaming.CanSeek)
-                        {
-                            streaming.Seek(TimeSpan.Zero);
-                        }
-                    }
                 }
             }
         }
@@ -327,7 +319,15 @@ public sealed class AudioVoice : IDisposable
         {
             if (force || Looping != _lastAppliedLooping)
             {
-                AL.Source(RawSource, ALSourceb.Looping, Looping);
+                if (_generator is not StreamingAudioGeneratorBase)
+                {
+                    AL.Source(RawSource, ALSourceb.Looping, Looping);
+                }
+                else if (_generator is StreamingAudioGeneratorBase streaming)
+                {
+                    AL.Source(RawSource, ALSourceb.Looping, false);
+                    streaming.Looping = Looping && streaming.CanSeek;
+                }
                 _lastAppliedLooping = Looping;
             }
         }
