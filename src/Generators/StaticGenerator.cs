@@ -34,7 +34,8 @@ public sealed class StaticSoundGenerator : StaticAudioGeneratorBase
                     throw new InvalidOperationException("Decoder format reported zero channels.");
                 }
                 const int framesToReadPerChunk = 4096;
-                var decodeBuffer = new short[framesToReadPerChunk * channels];
+                int bytesPerSample = format.BitsPerSample / 8;
+                var decodeBuffer = new byte[framesToReadPerChunk * channels * bytesPerSample];
                 var decodeSpan = decodeBuffer.AsSpan();
 
                 while (true)
@@ -47,10 +48,9 @@ public sealed class StaticSoundGenerator : StaticAudioGeneratorBase
                         break;
                     }
 
-                    int totalSamplesRead = framesRead * channels;
-                    var validDataSpan = decodeSpan.Slice(0, totalSamplesRead);
-                    var byteSpan = System.Runtime.InteropServices.MemoryMarshal.AsBytes(validDataSpan);
-                    pcmStream.Write(byteSpan);
+                    int bytesRead = framesRead * channels * bytesPerSample;
+                    var validDataSpan = decodeSpan.Slice(0, bytesRead);
+                    pcmStream.Write(validDataSpan);
                 }
             }, cancellationToken);
             _decoder = null!;

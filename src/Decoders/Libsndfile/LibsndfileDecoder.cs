@@ -60,7 +60,7 @@ public sealed unsafe class LibsndfileDecoder : IDecoder
         }
 
         CanSeek = _stream.CanSeek && sfInfo.seekable != 0;
-        Format = new AudioFormat(sfInfo.channels, sfInfo.samplerate, 16, AudioEncoding.PCM);
+        Format = new AudioFormat(sfInfo.channels, sfInfo.samplerate, 32, AudioEncoding.Float);
         Duration = (CanSeek && sfInfo.frames > 0 && sfInfo.samplerate > 0)
             ? TimeSpan.FromSeconds((double)sfInfo.frames / sfInfo.samplerate)
             : null;
@@ -72,19 +72,37 @@ public sealed unsafe class LibsndfileDecoder : IDecoder
     }
 
     /// <inheritdoc />
-    public int Decode(Span<short> pcmBuffer)
+    public int Decode(Span<byte> buffer)
     {
         if (_disposed) throw new ObjectDisposedException(nameof(LibsndfileDecoder));
         if (Format.Channels == 0) return 0;
-
-        if (pcmBuffer.Length % Format.Channels != 0)
+        int bytesPerSample = Format.BitsPerSample / 8;
+        int frameSizeBytes = Format.Channels * bytesPerSample;
+        if (frameSizeBytes <= 0) return 0;
+        if (buffer.Length % frameSizeBytes != 0)
         {
-            throw new ArgumentException("Buffer length must be a multiple of the number of channels.", nameof(pcmBuffer));
+            throw new ArgumentException("Buffer length must be a multiple of frame size (channels * bytesPerSample).", nameof(buffer));
         }
+        long framesToRead = buffer.Length / frameSizeBytes;
 
-        long framesToRead = pcmBuffer.Length / Format.Channels;
-        long framesRead = Libsndfile.sf_readf_short(_sndfileHandle, pcmBuffer, framesToRead);
-
+        long framesRead = 0;
+        switch (Format.Encoding)
+        {
+            case AudioEncoding.PCM when Format.BitsPerSample == 16:
+                {
+                    var sampleSpan = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, short>(buffer);
+                    framesRead = Libsndfile.sf_readf_short(_sndfileHandle, sampleSpan, framesToRead);
+                    break;
+                }
+            case AudioEncoding.Float when Format.BitsPerSample == 32:
+                {
+                    var sampleSpan = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(buffer);
+                    framesRead = Libsndfile.sf_readf_float(_sndfileHandle, sampleSpan, framesToRead);
+                    break;
+                }
+            default:
+                throw new NotSupportedException($"Decoding for encoding {Format.Encoding} with {Format.BitsPerSample} bits per sample is not implemented.");
+        }
         return (int)framesRead;
     }
 

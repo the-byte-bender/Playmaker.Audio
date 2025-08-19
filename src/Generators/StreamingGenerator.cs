@@ -44,7 +44,8 @@ public sealed class StreamingSoundGenerator : StreamingAudioGeneratorBase
             if (format.Channels == 0) throw new InvalidDataException("Decoder reported zero channels.");
 
             const int framesPerChunk = 2048;
-            var decodeBuffer = new short[framesPerChunk * format.Channels];
+            int bytesPerSample = format.BitsPerSample / 8;
+            var decodeBuffer = new byte[framesPerChunk * format.Channels * bytesPerSample];
             var decodeSpan = decodeBuffer.AsSpan();
 
             while (!token.IsCancellationRequested)
@@ -57,9 +58,9 @@ public sealed class StreamingSoundGenerator : StreamingAudioGeneratorBase
 
                     if (framesRead > 0)
                     {
-                        int totalSamplesRead = framesRead * format.Channels;
-                        var dataToSend = new short[totalSamplesRead];
-                        decodeSpan.Slice(0, totalSamplesRead).CopyTo(dataToSend);
+                        int bytesRead = framesRead * format.Channels * bytesPerSample;
+                        var dataToSend = new byte[bytesRead];
+                        decodeSpan.Slice(0, bytesRead).CopyTo(dataToSend);
                         Engine.AudioThreadMarshaller.Invoke(() =>
                         {
                             AL.BufferData(freeAlBuffer, alFormat, dataToSend, format.SampleRate);

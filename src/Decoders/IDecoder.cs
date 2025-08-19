@@ -29,16 +29,17 @@ public interface IDecoder : IDisposable
     /// Reads from the underlying stream and decodes the next chunk of audio.
     /// This is a synchronous, potentially blocking call. The audio data is interleaved.
     /// </summary>
-    /// <param name="pcmBuffer">
-    /// A span of memory to fill with decoded 16-bit PCM samples.
-    /// The length of this buffer must be a multiple of the number of channels.
-    /// For example, to read 1024 sample frames of stereo audio, the buffer must have a length of at least 2048.
+    /// <param name="buffer">
+    /// A span of memory to fill with decoded raw interleaved audio frame data.
+    /// The length of this buffer must be a multiple of the frame size (channels * bytesPerSample).
+    /// For example, to read 1024 frames of stereo 16-bit PCM audio (2 channels * 2 bytes), the buffer must have
+    /// a length of at least 1024 * 4 = 4096 bytes.
     /// </param>
     /// <returns>
-    /// The number of **sample frames** (not total samples or bytes) that were successfully decoded.
+    /// The number of sample frames(not total samples or bytes) that were successfully decoded.
     /// Returns 0 when the end of the stream is reached.
     /// </returns>    
-    int Decode(Span<short> pcmBuffer);
+    int Decode(Span<byte> buffer);
 
     /// <summary>
     /// Attempts to seek to a new position in the audio stream.

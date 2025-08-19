@@ -63,5 +63,11 @@ internal static unsafe partial class Libsndfile
     public static partial long sf_seek(IntPtr sndfile, long frames, int whence);
 
     [LibraryImport(LibraryName, EntryPoint = "sf_readf_short")]
+    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
     public static partial long sf_readf_short(IntPtr sndfile, Span<short> ptr, long frames);
+
+    [LibraryImport(LibraryName, EntryPoint = "sf_readf_float")]
+    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static partial long sf_readf_float(IntPtr sndfile, Span<float> ptr, long frames);
+
 }
