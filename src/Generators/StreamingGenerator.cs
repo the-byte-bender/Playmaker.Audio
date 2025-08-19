@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 using OpenTK.Audio.OpenAL;
+using System.Buffers;
 using Playmaker.Audio.Decoders;
 
 namespace Playmaker.Audio.Generators;
@@ -59,13 +60,23 @@ public sealed class StreamingSoundGenerator : StreamingAudioGeneratorBase
                     if (framesRead > 0)
                     {
                         int bytesRead = framesRead * format.Channels * bytesPerSample;
-                        var dataToSend = new byte[bytesRead];
-                        decodeSpan.Slice(0, bytesRead).CopyTo(dataToSend);
+                        byte[] pooled = ArrayPool<byte>.Shared.Rent(bytesRead);
+                        decodeSpan.Slice(0, bytesRead).CopyTo(pooled);
+                        int bufferHandle = freeAlBuffer;
+                        int capturedBytes = bytesRead;
                         Engine.AudioThreadMarshaller.Invoke(() =>
                         {
-                            AL.BufferData(freeAlBuffer, alFormat, dataToSend, format.SampleRate);
-                            Utils.CheckALError();
-                            _filledBuffers.Push(freeAlBuffer);
+                            try
+                            {
+                                ReadOnlySpan<byte> span = pooled.AsSpan(0, capturedBytes);
+                                AL.BufferData(bufferHandle, alFormat, span, format.SampleRate);
+                                Utils.CheckALError();
+                                _filledBuffers.Push(bufferHandle);
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(pooled);
+                            }
                         });
                     }
                     else
