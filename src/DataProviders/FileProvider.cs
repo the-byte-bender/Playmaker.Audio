@@ -44,11 +44,11 @@ public sealed class FileProvider : IGeneratorProvider
         if (!isStreaming)
         {
             var task = _cache.GetOrAdd(fullPath!, path => CreateAndRegisterAsync(path));
-            return await task;
+            return await task.ConfigureAwait(false);
         }
         else
         {
-            return await CreateStreamingGeneratorInternalAsync(fullPath!);
+            return await CreateStreamingGeneratorInternalAsync(fullPath!).ConfigureAwait(false);
         }
     }
 
@@ -60,7 +60,7 @@ public sealed class FileProvider : IGeneratorProvider
             var decoder = _engine.DecoderRegistry.CreateDecoder(path, stream);
             if (decoder is null) return null;
             var generator = new StaticSoundGenerator(_engine, decoder);
-            await generator.InitializeAsync();
+            await generator.InitializeAsync().ConfigureAwait(false);
             return generator;
         }
         catch { return null; }
@@ -84,7 +84,7 @@ public sealed class FileProvider : IGeneratorProvider
             var decoder = _engine.DecoderRegistry.CreateDecoder(path, stream);
             if (decoder is null) return null;
             var generator = new StreamingSoundGenerator(_engine, decoder);
-            await generator.InitializeAsync();
+            await generator.InitializeAsync().ConfigureAwait(false);
             generator.SilentRelease();
             return generator;
         }

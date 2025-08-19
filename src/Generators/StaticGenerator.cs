@@ -52,7 +52,7 @@ public sealed class StaticSoundGenerator : StaticAudioGeneratorBase
                     var validDataSpan = decodeSpan.Slice(0, bytesRead);
                     pcmStream.Write(validDataSpan);
                 }
-            }, cancellationToken);
+            }, cancellationToken).ConfigureAwait(false);
             _decoder = null!;
 
             await Engine.AudioThreadMarshaller.InvokeAsync(() =>
@@ -62,7 +62,7 @@ public sealed class StaticSoundGenerator : StaticAudioGeneratorBase
 
                 AL.BufferData(RawBuffer, alFormat, pcmData, format.SampleRate);
                 Utils.CheckALError();
-            });
+            }).ConfigureAwait(false);
         }
     }
 
