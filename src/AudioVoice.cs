@@ -561,6 +561,7 @@ public sealed class AudioVoice : IDisposable
         if ((State == VoiceState.PlayingPhysical || State == VoiceState.PausedPhysical) && AL.IsSource(RawSource))
         {
             AL.SourceRewind(RawSource);
+            AL.SourcePlay(RawSource);
             Utils.CheckALError();
         }
         if (_generator is StreamingAudioGeneratorBase streaming && streaming.CanSeek)
