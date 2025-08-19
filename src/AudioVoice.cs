@@ -484,7 +484,11 @@ public sealed class AudioVoice : IDisposable
     internal void PlayImmediate()
     {
         if (State == VoiceState.Disposed) return;
-        if (State == VoiceState.PlayingPhysical || State == VoiceState.PlayingVirtual) return;
+        if (State == VoiceState.PlayingPhysical || State == VoiceState.PlayingVirtual)
+        {
+            RewindImmediate();
+            return;
+        }
         var oldState = State;
         switch (State)
         {
