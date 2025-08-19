@@ -10,8 +10,9 @@ namespace Playmaker.Audio.Generators;
 /// <summary>
 /// A generator that decodes an audio stream in chunks on a background thread.
 /// </summary>
-public sealed class StreamingSoundGenerator : StreamingAudioGeneratorBase
+public sealed class StreamingSoundGenerator : StreamingAudioGeneratorBase, IAsyncDisposable
 {
+    private volatile bool _isDisposed;
     private readonly IDecoder _decoder;
     private Task? _decodingTask;
     private CancellationTokenSource? _cts;
@@ -116,14 +117,51 @@ public sealed class StreamingSoundGenerator : StreamingAudioGeneratorBase
         }
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+        _isDisposed = true;
+
+        _cts?.Cancel();
+        if (_decodingTask is not null)
+        {
+            try
+            {
+                await _decodingTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[StreamingGenerator] Decoding task failed: {ex}");
+            }
+        }
+
+        _cts?.Dispose();
+        _decoder.Dispose();
+        _pauseEvent.Dispose();
+        base.Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     protected override void Dispose(bool disposing)
     {
+        if (_isDisposed)
+        {
+            return;
+        }
+
         if (disposing)
         {
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _decoder.Dispose();
+            DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
-        base.Dispose(disposing);
+        else
+        {
+            base.Dispose(false);
+        }
     }
 }

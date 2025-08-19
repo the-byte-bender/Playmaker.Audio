@@ -57,12 +57,27 @@ public abstract class AudioGeneratorBase : IDisposable
     /// <summary>
     /// Called by an AudioVoice when it stops using this generator.
     /// </summary>
-    internal void DetachFrom(AudioVoice voice)
+    internal async void DetachFrom(AudioVoice voice)
     {
         OnDetached(voice);
 
         if (Interlocked.Decrement(ref _refCount) <= 0)
         {
+            if (this is IAsyncDisposable asyncDisposable)
+            {
+                try
+                {
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                    return;
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[AudioGeneratorBase] Detach failed: {ex}");
+                }
+            }
             Dispose();
         }
     }
