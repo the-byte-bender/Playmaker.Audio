@@ -17,6 +17,7 @@ internal enum DirtyFlags
     Looping = 1 << 3,
     MixState = 1 << 4,
     EffectivePriority = 1 << 5,
+    Attenuation = 1 << 6,
     All = ~0
 }
 
@@ -75,6 +76,12 @@ public sealed class AudioVoice : IDisposable
     public int Priority => _priority;
     private int _effectivePriority = 1;
     public int EffectivePriority => _effectivePriority;
+    private float _rolloffFactor = 1.0f;
+    public float RolloffFactor => _rolloffFactor;
+    private float _referenceDistance = 1.0f;
+    public float ReferenceDistance => _referenceDistance;
+    private float _maxDistance = float.MaxValue;
+    public float MaxDistance => _maxDistance;
 
     public VoiceState State { get; internal set; } = VoiceState.Stopped;
     private AudioBus _bus;
@@ -125,6 +132,10 @@ public sealed class AudioVoice : IDisposable
     public void SetVelocity(Vector3 velocity) => _engine.AudioThreadMarshaller.Invoke(() => { _velocity = velocity; _dirtyFlags |= DirtyFlags.Transform; });
 
     public void SetPriority(int priority) => _engine.AudioThreadMarshaller.Invoke(() => { _priority = priority; _dirtyFlags |= DirtyFlags.EffectivePriority; });
+
+    public void SetRolloff(float rolloff) => _engine.AudioThreadMarshaller.Invoke(() => { _rolloffFactor = rolloff; _dirtyFlags |= DirtyFlags.Attenuation; });
+    public void SetReferenceDistance(float distance) => _engine.AudioThreadMarshaller.Invoke(() => { _referenceDistance = distance; _dirtyFlags |= DirtyFlags.Attenuation; });
+    public void SetMaxDistance(float distance) => _engine.AudioThreadMarshaller.Invoke(() => { _maxDistance = distance; _dirtyFlags |= DirtyFlags.Attenuation; });
 
     public void AttachTo(AudioEmitter? newEmitter) => _engine.AudioThreadMarshaller.Invoke(() =>
     {
@@ -318,6 +329,16 @@ public sealed class AudioVoice : IDisposable
             {
                 AL.Source(RawSource, ALSourceb.Looping, Looping);
                 _lastAppliedLooping = Looping;
+            }
+        }
+
+        if (_dirtyFlags.HasFlag(DirtyFlags.Attenuation))
+        {
+            AL.Source(RawSource, ALSourcef.RolloffFactor, _rolloffFactor);
+            AL.Source(RawSource, ALSourcef.ReferenceDistance, _referenceDistance);
+            if (_maxDistance > 0f)
+            {
+                AL.Source(RawSource, ALSourcef.MaxDistance, _maxDistance);
             }
         }
     }
